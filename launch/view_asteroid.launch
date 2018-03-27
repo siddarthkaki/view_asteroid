@@ -9,7 +9,7 @@
     output="screen">
 
     <!-- Stereo baseline -->
-    <rosparam param="cam_baseline"> 0.1 </rosparam>
+    <rosparam param="cam_baseline"> 0.8 </rosparam>
 
     <!-- 3D file -->
     <param name="file_3d" value="Finished_Asteroid.stl"/>
@@ -42,7 +42,7 @@
   <arg name="half_height" default="$(eval 0.5*arg('height'))" />
   <arg name="half_width" default="$(eval 0.5*arg('width'))" />
 
-  <group ns="camera1">
+  <group ns="camera/right">
   <node name="camera_info" pkg="rostopic" type="rostopic"
       args="pub camera_info sensor_msgs/CameraInfo
      '{header: {seq: 0, stamp: {secs: 0, nsecs: 0}, frame_id: 'camera2'},
@@ -66,7 +66,7 @@
       output="screen"/>
   </group>
 
-  <group ns="camera2">
+  <group ns="camera/left">
   <node name="camera_info" pkg="rostopic" type="rostopic"
       args="pub camera_info sensor_msgs/CameraInfo
      '{header: {seq: 0, stamp: {secs: 0, nsecs: 0}, frame_id: 'camera2'},
