@@ -41,7 +41,7 @@ int main(int argc, char** argv){
 
 		// Camera pose
 		geometry_msgs::Quaternion quat_cam;
-		geometry_msgs::Point pos_cam = helper::SetPoint(0.0, 0.0, 0.0);
+		geometry_msgs::Point pos_cam = helper::SetPoint(-2.0, 0.0, 0.0);
 		geometry_msgs::Pose pose_cam;
 		quat_cam.x = 0.0; quat_cam.y = 0.0;
 		quat_cam.z = 0.0; quat_cam.w = 1.0;

@@ -87,7 +87,6 @@ void MeshMarker(const Eigen::Vector3d &point,
 
 void poseCallback(const geometry_msgs::Pose::ConstPtr& msg,
 	              visualization_msgs::MarkerArray& asteroid_marker) {
-	ROS_INFO("Pose callback");
 	// Send object pose to tf tree
 	ros::Time time_now = tf_pub(msg->position, 
 		                        msg->orientation, 
@@ -99,7 +98,6 @@ void poseCallback(const geometry_msgs::Pose::ConstPtr& msg,
 
 void camCallback(const geometry_msgs::Pose::ConstPtr& msg,
 	             const double& cam_baseline) {
-	ROS_INFO("Cam callback");
 	// Set camera's tree frame
 	// Eigen::Vector3d cam_position(cam_pos[0], cam_pos[1], cam_pos[2]);
 	tf_pub(msg->position, msg->orientation, "world", "camera");
@@ -116,14 +114,6 @@ void camCallback(const geometry_msgs::Pose::ConstPtr& msg,
 	// Set frame for camera 2 w.r.t. the camera frame
 	Eigen::Vector3d cam2_position(0.0, cam_baseline, 0.0);
 	tf_pub(cam2_position, q_cam, "camera", "camera2");
-}
-
-void poseCallback2(const geometry_msgs::Pose::ConstPtr& msg) {
-	ROS_INFO("Pose callback");
-}
-
-void camCallback2(const geometry_msgs::Pose::ConstPtr& msg) {
-	ROS_INFO("Cam callback");
 }
 
 int main(int argc, char** argv){
@@ -166,13 +156,10 @@ int main(int argc, char** argv){
 	std::string obj_pose_topic, cam_pose_topic;
 	node.getParam("object_pose_topic", obj_pose_topic);
 	node.getParam("camera_pose_topic", cam_pose_topic);
-	// node.subscribe<geometry_msgs::Pose>(obj_pose_topic, 10, 
-	// 	boost::bind(poseCallback, _1, asteroid_marker));
-	// node.subscribe<geometry_msgs::Pose>(cam_pose_topic, 10, 
-	// 	boost::bind(camCallback, _1, cam_baseline));
-	node.subscribe<geometry_msgs::Pose>(obj_pose_topic, 10, &poseCallback2);
-	node.subscribe<geometry_msgs::Pose>(cam_pose_topic, 10, &camCallback2);
-
+	ros::Subscriber obj_sub = node.subscribe<geometry_msgs::Pose>(obj_pose_topic, 10, 
+		boost::bind(poseCallback, _1, asteroid_marker));
+	ros::Subscriber cam_sub = node.subscribe<geometry_msgs::Pose>(cam_pose_topic, 10, 
+		boost::bind(camCallback, _1, cam_baseline));
 
 	ROS_INFO("[view_asteroid]: Subscribing to: %s", obj_pose_topic.c_str());
     ROS_INFO("[view_asteroid]: Subscribing to: %s", cam_pose_topic.c_str());
