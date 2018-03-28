@@ -109,11 +109,11 @@ void camCallback(const geometry_msgs::Pose::ConstPtr& msg,
 
 	// Set frame for camera 1 w.r.t. the camera frame
 	Eigen::Vector3d cam1_position(0.0, 0.0, 0.0);
-	tf_pub(cam1_position, q_cam, "camera", "camera/right");
+	tf_pub(cam1_position, q_cam, "camera", "camera1");
 
 	// Set frame for camera 2 w.r.t. the camera frame
 	Eigen::Vector3d cam2_position(0.0, cam_baseline, 0.0);
-	tf_pub(cam2_position, q_cam, "camera", "camera/left");
+	tf_pub(cam2_position, q_cam, "camera", "camera2");
 }
 
 int main(int argc, char** argv){
