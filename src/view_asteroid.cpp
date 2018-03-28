@@ -1,6 +1,10 @@
 // Cpp libraries
 #include <ros/ros.h>
 #include <visualization_msgs/MarkerArray.h>
+#include <sensor_msgs/Image.h>
+#include <sensor_msgs/CameraInfo.h>
+#include <std_msgs/Float64.h>
+#include <std_msgs/Float64MultiArray.h>
 #include <Eigen/Dense>
 #include <tf/transform_broadcaster.h>
 #include <tf2_ros/static_transform_broadcaster.h>
@@ -109,11 +113,64 @@ void camCallback(const geometry_msgs::Pose::ConstPtr& msg,
 
 	// Set frame for camera 1 w.r.t. the camera frame
 	Eigen::Vector3d cam1_position(0.0, 0.0, 0.0);
-	tf_pub(cam1_position, q_cam, "camera", "camera1");
+	tf_pub(cam1_position, q_cam, "camera", "camera/right");
 
 	// Set frame for camera 2 w.r.t. the camera frame
 	Eigen::Vector3d cam2_position(0.0, cam_baseline, 0.0);
-	tf_pub(cam2_position, q_cam, "camera", "camera2");
+	tf_pub(cam2_position, q_cam, "camera", "camera/left");
+}
+
+void rightCamCallback(const sensor_msgs::Image::ConstPtr& msg,
+	                  const double& height,
+	                  const double& width,
+	                  const double& f,
+	                  const double& cx,
+	                  const double& cy,
+	                  const double& cam_baseline,
+	                  const std::string& left_right,
+	                  const ros::Publisher& pub_info) {
+	std::vector<double> D = {0.0};
+	std::vector<double> K = {  f, 0.0,  cx, 
+		                     0.0,   f,  cy, 
+		                     0.0, 0.0, 1.0};
+	std::vector<double> R = {1.0, 0.0, 0.0,
+		                     0.0, 1.0, 0.0,
+		                     0.0, 0.0, 1.0};
+
+    std::vector<double> P;
+    if(left_right.compare("right") == 0) {
+    	P = {f,   0.0,  cx, 0.0,
+	         0.0,   f,  cy, 0.0, 
+	         0.0, 0.0, 1.0, 0.0};	
+    } else {
+    	P = {f,   0.0,  cx, -f*cam_baseline,
+             0.0,   f,  cy, 0.0, 
+             0.0, 0.0, 1.0, 0.0};	
+    }
+
+	sensor_msgs::CameraInfo cam_info;
+	cam_info.header = msg->header;
+	cam_info.height = height;
+	cam_info.width = width;
+	cam_info.distortion_model = "plumb_bob";
+	cam_info.D = D;
+	for (uint i = 0; i < 12; i++) {
+		if (i < 9) {
+			cam_info.K[i] = K[i];
+			cam_info.R[i] = R[i];
+		}
+		cam_info.P[i] = P[i];
+	}
+	cam_info.binning_x = 0.0;
+	cam_info.binning_y = 0.0;
+	cam_info.roi.x_offset = 0.0;
+	cam_info.roi.y_offset = 0.0;
+	cam_info.roi.height = height;
+	cam_info.roi.width = width;
+	cam_info.roi.do_rectify = true;
+	pub_info.publish(cam_info);
+
+	// ROS_INFO("frame_id2: %s", msg->header.frame_id.c_str());
 }
 
 int main(int argc, char** argv){
@@ -123,8 +180,13 @@ int main(int argc, char** argv){
 	const double rate = 200.0;
 	ros::Rate loop_rate(rate);
 
-	// Get camera baseline
-	double cam_baseline;
+	// Get camera paramters
+	double height, width, f, cx, cy, cam_baseline;
+	node.getParam("height", height);
+	node.getParam("width", width);
+	node.getParam("f_length", f);
+	node.getParam("cx", cx);
+	node.getParam("cy", cy);
 	node.getParam("cam_baseline", cam_baseline);
 
 	// Get 3d file for rendering
@@ -151,15 +213,24 @@ int main(int argc, char** argv){
 	pub_vis = node.advertise
 		<visualization_msgs::MarkerArray>("asteroid_marker", 1);
 
+	// Set publishers for cam_info
+	ros::Publisher pub_right_info = node.advertise<sensor_msgs::CameraInfo>("/camera/right/camera_info", 10);
+	ros::Publisher pub_left_info = node.advertise<sensor_msgs::CameraInfo>("/camera/left/camera_info", 10);
+
 	// Set subscribers to object and camera pose
 	ros::Subscriber obj_subs, cam_subs;
 	std::string obj_pose_topic, cam_pose_topic;
 	node.getParam("object_pose_topic", obj_pose_topic);
 	node.getParam("camera_pose_topic", cam_pose_topic);
-	ros::Subscriber obj_sub = node.subscribe<geometry_msgs::Pose>(obj_pose_topic, 10, 
+	ros::Subscriber obj_pose_sub = node.subscribe<geometry_msgs::Pose>(obj_pose_topic, 10, 
 		boost::bind(poseCallback, _1, asteroid_marker));
-	ros::Subscriber cam_sub = node.subscribe<geometry_msgs::Pose>(cam_pose_topic, 10, 
+	ros::Subscriber cam_pose_sub = node.subscribe<geometry_msgs::Pose>(cam_pose_topic, 10, 
 		boost::bind(camCallback, _1, cam_baseline));
+	ros::Subscriber right_cam_sub = node.subscribe<sensor_msgs::Image>("/camera/right/image_raw", 10, 
+		boost::bind(rightCamCallback, _1, height, width, f, cx, cy, cam_baseline, "right", pub_right_info));
+	ros::Subscriber left_cam_sub = node.subscribe<sensor_msgs::Image>("/camera/left/image_raw", 10, 
+		
+		boost::bind(rightCamCallback, _1, height, width, f, cx, cy, cam_baseline, "left", pub_left_info));
 
 	ROS_INFO("[view_asteroid]: Subscribing to: %s", obj_pose_topic.c_str());
     ROS_INFO("[view_asteroid]: Subscribing to: %s", cam_pose_topic.c_str());

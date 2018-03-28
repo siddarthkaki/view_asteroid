@@ -6,6 +6,7 @@
 #include "geometry_msgs/Point.h"
 #include "geometry_msgs/Quaternion.h"
 #include "nav_msgs/Odometry.h"
+#include "std_msgs/Float64.h"
 #include <math.h>
 #include <Eigen/Dense>
 

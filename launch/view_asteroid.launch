@@ -3,13 +3,24 @@
   <arg name="pose_topic" default="/view_obj/obj_pose" />
   <arg name="cam_topic" default="/view_obj/cam_pose" />
 
+  <arg name="height" default="720" />
+  <arg name="width" default="1280" />
+  <arg name="f_length" default="960" />
+  <arg name="cx" default="$(eval 0.5*arg('width'))" />
+  <arg name="cy" default="$(eval 0.5*arg('height'))" />
+
   <node pkg="view_asteroid"
     type="view_asteroid"
     name="view_asteroid"
     output="screen">
 
-    <!-- Stereo baseline -->
-    <rosparam param="cam_baseline"> 0.2 </rosparam>
+    <!-- Camera parameters -->
+    <param name="height" value="$(arg height)"/>
+    <param name="width" value="$(arg width)"/>
+    <param name="f_length" value="$(arg f_length)"/>
+    <param name="cx" value="$(arg cx)"/>
+    <param name="cy" value="$(arg cy)"/>
+    <param name="cam_baseline" value="0.2"/>
 
     <!-- 3D file -->
     <param name="file_3d" value="Finished_Asteroid.stl"/>
@@ -36,27 +47,21 @@
 
   </node>
 
-  <arg name="height" default="720" />
-  <arg name="width" default="1280" />
-  <arg name="f_length" default="960" />
-  <arg name="half_height" default="$(eval 0.5*arg('height'))" />
-  <arg name="half_width" default="$(eval 0.5*arg('width'))" />
-
-  <group ns="camera1">
+  <group ns="right_cam">
   <node name="camera_info" pkg="rostopic" type="rostopic"
       args="pub camera_info sensor_msgs/CameraInfo
-     '{header: {seq: 0, stamp: {secs: 0, nsecs: 0}, frame_id: 'camera1'},
+     '{header: {seq: 0, stamp: {secs: 0, nsecs: 0}, frame_id: 'camera/right'},
       height: $(arg height), width: $(arg width), distortion_model: 'plumb_bob',
       D: [0],
-      K: [$(arg f_length),             0.0, $(arg half_width), 
-          0.0,             $(arg f_length), $(arg half_height),
-          0.0,                         0.0,               1.0],
+      K: [$(arg f_length),             0.0, $(arg cx), 
+          0.0,             $(arg f_length), $(arg cy),
+          0.0,                         0.0,      1.0],
       R: [1.0, 0.0, 0.0,
           0.0, 1.0, 0.0,
           0.0, 0.0, 1.0],
-      P: [$(arg f_length),             0.0,  $(arg half_width), 0.0,
-          0.0,             $(arg f_length), $(arg half_height), 0.0, 
-          0.0,                         0.0,                1.0, 0.0],
+      P: [$(arg f_length),             0.0, $(arg cx), 0.0,
+          0.0,             $(arg f_length), $(arg cy), 0.0, 
+          0.0,                         0.0,       1.0, 0.0],
       binning_x: 0, binning_y: 0,
       roi: {x_offset: 0, 
             y_offset: 0, 
@@ -66,21 +71,21 @@
       output="screen"/>
   </group>
 
-  <group ns="camera2">
+  <group ns="left_cam">
   <node name="camera_info" pkg="rostopic" type="rostopic"
       args="pub camera_info sensor_msgs/CameraInfo
-     '{header: {seq: 0, stamp: {secs: 0, nsecs: 0}, frame_id: 'camera2'},
+     '{header: {seq: 0, stamp: {secs: 0, nsecs: 0}, frame_id: 'camera/left'},
       height: $(arg height), width: $(arg width), distortion_model: 'plumb_bob',
       D: [0],
-      K: [$(arg f_length),             0.0, $(arg half_width), 
-          0.0,             $(arg f_length), $(arg half_height),
-          0.0,                         0.0,               1.0],
+      K: [$(arg f_length),             0.0, $(arg cx), 
+          0.0,             $(arg f_length), $(arg cy),
+          0.0,                         0.0,      1.0],
       R: [1.0, 0.0, 0.0,
           0.0, 1.0, 0.0,
           0.0, 0.0, 1.0],
-      P: [$(arg f_length),             0.0,  $(arg half_width), 0.0,
-          0.0,             $(arg f_length), $(arg half_height), 0.0, 
-          0.0,                         0.0,                1.0, 0.0],
+      P: [$(arg f_length),             0.0, $(arg cx), 0.0,
+          0.0,             $(arg f_length), $(arg cy), 0.0, 
+          0.0,                         0.0,       1.0, 0.0],
       binning_x: 0, binning_y: 0,
       roi: {x_offset: 0, 
             y_offset: 0, 
