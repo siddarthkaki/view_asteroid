@@ -12,8 +12,26 @@
 #include "view_asteroid/helper.h"
 #include <thread>
 
+class mutexStruct {
+ public:
+    pthread_mutex_t m_right_img;
+    pthread_mutex_t m_left_img;
+
+    // Methods
+    mutexStruct() {
+        pthread_mutex_init(&m_right_img, NULL);
+        pthread_mutex_init(&m_left_img, NULL);
+    }
+    void destroy() {
+        pthread_mutex_destroy(&m_right_img);
+        pthread_mutex_destroy(&m_left_img);
+    }
+};
+
 // Global variables
 ros::Publisher pub_vis;	 // Publisher for visualization in RVIZ
+sensor_msgs::Image img_right_, img_left_;
+mutexStruct mutexes_;
 
 ros::Time tf_pub(const Eigen::Vector3d &point,
 	             const Eigen::Quaterniond &quat,
@@ -100,7 +118,7 @@ void poseCallback(const geometry_msgs::Pose::ConstPtr& msg,
 	pub_vis.publish(asteroid_marker);
 }
 
-void camCallback(const geometry_msgs::Pose::ConstPtr& msg,
+void camPoseCallback(const geometry_msgs::Pose::ConstPtr& msg,
 	             const double& cam_baseline) {
 	// Set camera's tree frame
 	// Eigen::Vector3d cam_position(cam_pos[0], cam_pos[1], cam_pos[2]);
@@ -120,15 +138,15 @@ void camCallback(const geometry_msgs::Pose::ConstPtr& msg,
 	tf_pub(cam2_position, q_cam, "camera", "camera/left");
 }
 
-void rightCamCallback(const sensor_msgs::Image::ConstPtr& msg,
-	                  const double& height,
-	                  const double& width,
-	                  const double& f,
-	                  const double& cx,
-	                  const double& cy,
-	                  const double& cam_baseline,
-	                  const std::string& left_right,
-	                  const ros::Publisher& pub_info) {
+void camCallback(const sensor_msgs::Image::ConstPtr& msg,
+	             const double& height,
+	             const double& width,
+	             const double& f,
+	             const double& cx,
+	             const double& cy,
+	             const double& cam_baseline,
+	             const std::string& left_right,
+	             const ros::Publisher& pub_info) {
 	std::vector<double> D = {0.0};
 	std::vector<double> K = {  f, 0.0,  cx, 
 		                     0.0,   f,  cy, 
@@ -141,11 +159,17 @@ void rightCamCallback(const sensor_msgs::Image::ConstPtr& msg,
     if(left_right.compare("right") == 0) {
     	P = {f,   0.0,  cx, 0.0,
 	         0.0,   f,  cy, 0.0, 
-	         0.0, 0.0, 1.0, 0.0};	
+	         0.0, 0.0, 1.0, 0.0};
+	    pthread_mutex_lock(&mutexes_.m_right_img);
+	    	img_right_ = *msg;
+	    pthread_mutex_unlock(&mutexes_.m_right_img);
     } else {
     	P = {f,   0.0,  cx, -f*cam_baseline,
              0.0,   f,  cy, 0.0, 
-             0.0, 0.0, 1.0, 0.0};	
+             0.0, 0.0, 1.0, 0.0};
+        pthread_mutex_lock(&mutexes_.m_left_img);
+        	img_left_ = *msg;
+        pthread_mutex_unlock(&mutexes_.m_left_img);
     }
 
 	sensor_msgs::CameraInfo cam_info;
@@ -171,6 +195,84 @@ void rightCamCallback(const sensor_msgs::Image::ConstPtr& msg,
 	pub_info.publish(cam_info);
 
 	// ROS_INFO("frame_id2: %s", msg->header.frame_id.c_str());
+}
+
+void camSyncThread(const double& rate,
+		           const double& height,
+		           const double& width,
+		           const double& f,
+		           const double& cx,
+		           const double& cy,
+		           const double& cam_baseline) {
+	ros::NodeHandle node("~");
+	ros::Rate loop_rate(rate);
+	loop_rate.sleep();
+	sensor_msgs::Image img_right, img_left;
+	ros::Publisher pub_right_info = node.advertise<sensor_msgs::CameraInfo>("/camera_sync/right/camera_info", 10);
+	ros::Publisher pub_left_info = node.advertise<sensor_msgs::CameraInfo>("/camera_sync/left/camera_info", 10);
+	ros::Publisher pub_right_raw = node.advertise<sensor_msgs::Image>("/camera_sync/right/image_raw", 10);
+	ros::Publisher pub_left_raw = node.advertise<sensor_msgs::Image>("/camera_sync/left/image_raw", 10);
+
+	std::vector<double> D = {0.0};
+	std::vector<double> K = {  f, 0.0,  cx, 
+		                     0.0,   f,  cy, 
+		                     0.0, 0.0, 1.0};
+	std::vector<double> R = {1.0, 0.0, 0.0,
+		                     0.0, 1.0, 0.0,
+		                     0.0, 0.0, 1.0};
+
+    std::vector<double> Pr = {f,   0.0,  cx, 0.0,
+					          0.0,   f,  cy, 0.0, 
+					          0.0, 0.0, 1.0, 0.0};
+    std::vector<double> Pl = {f,   0.0,  cx, -f*cam_baseline,
+				              0.0,   f,  cy, 0.0, 
+				              0.0, 0.0, 1.0, 0.0};
+
+	sensor_msgs::CameraInfo cam_info, cam_info_r, cam_info_l;
+	cam_info.height = height;
+	cam_info.width = width;
+	cam_info.distortion_model = "plumb_bob";
+	cam_info.D = D;
+	cam_info.binning_x = 0.0;
+	cam_info.binning_y = 0.0;
+	cam_info.roi.x_offset = 0.0;
+	cam_info.roi.y_offset = 0.0;
+	cam_info.roi.height = height;
+	cam_info.roi.width = width;
+	cam_info.roi.do_rectify = true;
+	cam_info_r = cam_info;
+	cam_info_l = cam_info;
+	for (uint i = 0; i < 12; i++) {
+		if (i < 9) {
+			cam_info_r.K[i] = K[i];
+			cam_info_r.R[i] = R[i];
+			cam_info_l.K[i] = K[i];
+			cam_info_l.R[i] = R[i];
+		}
+		cam_info_r.P[i] = Pr[i];
+		cam_info_l.P[i] = Pl[i];
+	}
+
+	while (ros::ok()) {
+		pthread_mutex_lock(&mutexes_.m_right_img);
+        	img_right = img_right_;
+        pthread_mutex_unlock(&mutexes_.m_right_img);
+        pthread_mutex_lock(&mutexes_.m_left_img);
+        	img_left = img_left_;
+        pthread_mutex_unlock(&mutexes_.m_left_img);
+
+    	cam_info_r.header = img_right.header;
+    	cam_info_l.header = img_right.header;
+    	img_left.header = img_right.header;
+
+    	pub_right_info.publish(cam_info_r);
+    	pub_left_info.publish(cam_info_l);
+    	pub_right_raw.publish(img_right);
+    	pub_left_raw.publish(img_left);
+
+	    loop_rate.sleep();
+	}
+	// ROS_DEBUG("Exiting Mediation Layer Thread...");
 }
 
 int main(int argc, char** argv){
@@ -225,15 +327,19 @@ int main(int argc, char** argv){
 	ros::Subscriber obj_pose_sub = node.subscribe<geometry_msgs::Pose>(obj_pose_topic, 10, 
 		boost::bind(poseCallback, _1, asteroid_marker));
 	ros::Subscriber cam_pose_sub = node.subscribe<geometry_msgs::Pose>(cam_pose_topic, 10, 
-		boost::bind(camCallback, _1, cam_baseline));
+		boost::bind(camPoseCallback, _1, cam_baseline));
 	ros::Subscriber right_cam_sub = node.subscribe<sensor_msgs::Image>("/camera/right/image_raw", 10, 
-		boost::bind(rightCamCallback, _1, height, width, f, cx, cy, cam_baseline, "right", pub_right_info));
+		boost::bind(camCallback, _1, height, width, f, cx, cy, cam_baseline, "right", pub_right_info));
 	ros::Subscriber left_cam_sub = node.subscribe<sensor_msgs::Image>("/camera/left/image_raw", 10, 
-		
-		boost::bind(rightCamCallback, _1, height, width, f, cx, cy, cam_baseline, "left", pub_left_info));
+		boost::bind(camCallback, _1, height, width, f, cx, cy, cam_baseline, "left", pub_left_info));
 
 	ROS_INFO("[view_asteroid]: Subscribing to: %s", obj_pose_topic.c_str());
     ROS_INFO("[view_asteroid]: Subscribing to: %s", cam_pose_topic.c_str());
+
+    // Start thread that synchronizes camera images
+    std::thread h_sync_images;
+    double sync_rate = 5.0;	// 5hz
+  	h_sync_images = std::thread(camSyncThread, sync_rate, height, width, f, cx, cy, cam_baseline);
     
 	
 	// double omega = 0.0;
