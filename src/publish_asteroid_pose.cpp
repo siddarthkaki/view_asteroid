@@ -1,6 +1,7 @@
 #include <ros/ros.h>
 #include <Eigen/Dense>
 #include "view_asteroid/helper.h"
+#include "view_asteroid/rk4.h"
 
 int main(int argc, char** argv){
 	ros::init(argc, argv, "publish_asteroid_pose");
@@ -20,16 +21,17 @@ int main(int argc, char** argv){
 		node.advertise<geometry_msgs::Pose>(cam_pose_topic, 1);
 
 	double omega = 0.25;
+	Eigen::Vector3d omega0(0.0, 0.0, 0.25);
 	ros::Time t0 = ros::Time::now();
 	while (ros::ok()) {
 
 		// Set asteroid's orientation
 		float dt = (ros::Time::now() - t0).toSec();
-		float roll = omega*dt, pitch = -M_PI/2.0, yaw = 0.0;
+		float roll = 0.0, pitch = -M_PI/2.0, yaw = omega*dt;
 		Eigen::Quaterniond q1, q2, q;
 		q1 = Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY());
-		q2 = Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX());
-		q = q1*q2;
+		q2 = Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ());
+		q = q2*q1;
 		geometry_msgs::Quaternion quat;
 		quat.x = q.x(); quat.y = q.y(); quat.z = q.z(); quat.w = q.w();
 

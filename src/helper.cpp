@@ -137,6 +137,10 @@ Eigen::Matrix3d skew(float x, float y, float z){
 	     -y, x,  0;
 
 	return M;
+} 
+
+Eigen::Matrix3d skew(Eigen::Vector3d vec) {
+	return skew(vec[0], vec[1], vec[2]);
 }
 
 nav_msgs::Odometry GetZeroOdom() {

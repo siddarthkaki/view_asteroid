@@ -74,6 +74,9 @@ void printVector3d(const std::string &string,
 //Function to generate a skew-symmetric matrix from a vector (based on kinematics)
 Eigen::Matrix3d skew(float x, float y, float z);
 
+//Function to generate a skew-symmetric matrix from a vector (based on kinematics)
+Eigen::Matrix3d skew(Eigen::Vector3d vec);
+
 // Get a zero version of the odometry message type
 nav_msgs::Odometry GetZeroOdom();
 
