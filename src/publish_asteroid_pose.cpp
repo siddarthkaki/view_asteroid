@@ -16,13 +16,13 @@ int main(int argc, char** argv){
 	node.getParam("object_pose_topic", obj_pose_topic);
 	node.getParam("camera_pose_topic", cam_pose_topic);
 	ros::Publisher asteroid_pose = 
-		node.advertise<geometry_msgs::Pose>(obj_pose_topic, 1);
+		node.advertise<nav_msgs::Odometry>(obj_pose_topic, 1);
 	ros::Publisher camera_pose = 
 		node.advertise<geometry_msgs::Pose>(cam_pose_topic, 1);
 
 	// Initial conditions
 	// double omega = 0.25;
-	Eigen::Vector3d omega0(0.15, 0.1, 0.05);
+	Eigen::Vector3d omega0(0.25, 0.1, 0.05);
 	Eigen::Vector3d quat_vec(0.0, -sin(M_PI/4), 0.0);
 	double quat_scalar = cos(M_PI/4);
 
@@ -33,6 +33,11 @@ int main(int argc, char** argv){
 	// States
 	Eigen::Vector3d omega_rk4;
 	Eigen::Quaterniond q_rk4;
+
+	//Initialize odometry message type
+	nav_msgs::Odometry asteroid_odom;
+	asteroid_odom.header.frame_id = "world";
+	asteroid_odom.child_frame_id = "asteroid";
 
 	// Initialize time
 	ros::Time t_prev = ros::Time::now();
@@ -55,14 +60,15 @@ int main(int argc, char** argv){
 		attitude_integrator.UpdateStates(dt);
 		attitude_integrator.GetStates(&omega_rk4, &q_rk4);
 
-		// Set ROS structure for asteroid pose
+		// Set ROS structure for asteroid pose/twist
 		geometry_msgs::Quaternion quat;
 		quat.x = q_rk4.x(); quat.y = q_rk4.y();
 		quat.z = q_rk4.z(); quat.w = q_rk4.w();
-		geometry_msgs::Point pos = helper::SetPoint(0.0, 0.0, 0.0);
-		geometry_msgs::Pose pose;
-		pose.position = pos;
-		pose.orientation = quat;
+		asteroid_odom.pose.pose.position = helper::SetPoint(0.0, 0.0, 0.0);
+		asteroid_odom.pose.pose.orientation = quat;
+		asteroid_odom.twist.twist.linear = helper::SetVector3(0.0, 0.0, 0.0);
+		asteroid_odom.twist.twist.angular = helper::SetVector3(omega_rk4[0], omega_rk4[1], omega_rk4[2]);
+		asteroid_odom.header.stamp = ros::Time::now();
 
 		// Camera pose
 		geometry_msgs::Quaternion quat_cam;
@@ -74,7 +80,7 @@ int main(int argc, char** argv){
 		pose_cam.orientation = quat_cam;
 
 		// Publish poses
-		asteroid_pose.publish(pose);
+		asteroid_pose.publish(asteroid_odom);
 		camera_pose.publish(pose_cam);
 
 		t_prev = time_now;

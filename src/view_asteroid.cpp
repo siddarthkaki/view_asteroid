@@ -107,11 +107,11 @@ void MeshMarker(const Eigen::Vector3d &point,
 	markerArray->markers.push_back(marker);
 }
 
-void poseCallback(const geometry_msgs::Pose::ConstPtr& msg,
+void poseCallback(const nav_msgs::Odometry::ConstPtr& msg,
 	              visualization_msgs::MarkerArray& asteroid_marker) {
 	// Send object pose to tf tree
-	ros::Time time_now = tf_pub(msg->position, 
-		                        msg->orientation, 
+	ros::Time time_now = tf_pub(msg->pose.pose.position, 
+		                        msg->pose.pose.orientation, 
 		                        "world", "asteroid");
 	// Asteroid visualization
 	asteroid_marker.markers[0].header.stamp = time_now;
@@ -324,7 +324,7 @@ int main(int argc, char** argv){
 	std::string obj_pose_topic, cam_pose_topic;
 	node.getParam("object_pose_topic", obj_pose_topic);
 	node.getParam("camera_pose_topic", cam_pose_topic);
-	ros::Subscriber obj_pose_sub = node.subscribe<geometry_msgs::Pose>(obj_pose_topic, 10, 
+	ros::Subscriber obj_pose_sub = node.subscribe<nav_msgs::Odometry>(obj_pose_topic, 10, 
 		boost::bind(poseCallback, _1, asteroid_marker));
 	ros::Subscriber cam_pose_sub = node.subscribe<geometry_msgs::Pose>(cam_pose_topic, 10, 
 		boost::bind(camPoseCallback, _1, cam_baseline));
