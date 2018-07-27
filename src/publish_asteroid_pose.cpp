@@ -48,8 +48,6 @@ int main(int argc, char** argv){
 		// q1 = Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY());
 		// q2 = Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ());
 		// q = q2*q1;
-		// geometry_msgs::Quaternion quat;
-		// quat.x = q.x(); quat.y = q.y(); quat.z = q.z(); quat.w = q.w();
 
 		// Integrate RK4
 		time_now = ros::Time::now();
