@@ -95,6 +95,27 @@
       output="screen"/>
   </group>
 
+  <group ns="camera_sync">
+    <node pkg="stereo_image_proc"
+      type="stereo_image_proc"
+      name="stereo_image_proc"
+      output="screen">
+
+      <!-- 3D file -->
+      <param name="file_3d" value="Finished_Asteroid.stl"/>
+
+      <!-- Model offset and scaling (offset is also scaled) -->
+      <!-- Offset is used when center of 3d model is not the center of the object itself -->
+      <rosparam param="offset_object"> [0.0,-35.0, 20.0]</rosparam>
+      <rosparam param="scale_object"> 0.01</rosparam>
+
+      <!-- Topics to subscribe to object and camera poses -->
+      <param name="object_pose_topic" value="$(arg pose_topic)"/>
+      <param name="camera_pose_topic" value="$(arg cam_topic)"/>
+
+    </node>
+  </group>
+
   <node pkg="rviz" type="rviz" name="rviz" args="-d $(find view_asteroid)/rviz/rviz_config.rviz"/>
 </launch>
 
