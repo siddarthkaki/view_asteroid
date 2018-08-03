@@ -28,7 +28,7 @@ int main(int argc, char** argv){
     // Load initial conditions
     std::vector<double> initial_ang_vel, initial_quat_vector;
     double initial_quat_scalar;
-    node.getParam("initial_ang_vel", initial_ang_vel);
+    node.getParam("initial_ang_vel",     initial_ang_vel);
     node.getParam("initial_quat_vector", initial_quat_vector);
     node.getParam("initial_quat_scalar", initial_quat_scalar);
 
@@ -37,14 +37,16 @@ int main(int argc, char** argv){
     node.getParam("J_mat", J_mat);
 
     // Set subscribers to object and camera pose
-    ros::Subscriber obj_subs, cam_subs;
-    std::string obj_pose_topic, cam_pose_topic;
-    node.getParam("object_pose_topic", obj_pose_topic);
-    node.getParam("camera_pose_topic", cam_pose_topic);
+    std::string obj_pose_topic, cam_pose_topic, obj_torque_topic;
+    node.getParam("object_pose_topic",   obj_pose_topic);
+    node.getParam("camera_pose_topic",   cam_pose_topic);
+    node.getParam("object_torque_topic", obj_torque_topic);
     ros::Publisher asteroid_pose = 
         node.advertise<nav_msgs::Odometry>(obj_pose_topic, 1);
     ros::Publisher camera_pose = 
         node.advertise<geometry_msgs::Pose>(cam_pose_topic, 1);
+    ros::Publisher object_torque = 
+        node.advertise<geometry_msgs::Vector3>(obj_torque_topic, 1);
 
     // Initial conditions
     // double omega = 0.25;
@@ -70,14 +72,12 @@ int main(int argc, char** argv){
     asteroid_odom.child_frame_id = "asteroid";
 
     // Initialize time
-    ros::Time t_prev = ros::Time::now();
+    ros::Time t0 = ros::Time::now();
+    ros::Time t_prev = t0;
     ros::Time time_now;
 
     // Start service to change angular velocity of the object
     ros::ServiceServer update_angvel_srv = node.advertiseService("/UpdateAngVelObject", change_angvel);
-
-    // Torque will always be zero
-    Eigen::Vector3d torque(0.0, 0.0, 0.0);
 
     // Print initial conditions
     ROS_INFO("Initial angular velocity: %f\t%f\t%f", omega0[0], omega0[1], omega0[2]);
@@ -87,10 +87,18 @@ int main(int argc, char** argv){
 
     // Update differential equations
     while (ros::ok()) {
-
-        // Integrate RK4
+        // Get times
         time_now = ros::Time::now();
         float dt = (time_now - t_prev).toSec();
+
+        // Setting torque
+        double A = 10, w = 0.1;
+        ros::Duration t = time_now - t0;
+        Eigen::Vector3d torque = A*Eigen::Vector3d(sin(w*t.toSec()),
+                                                   sin(w*t.toSec() + 2.0*M_PI/3.0),
+                                                   sin(w*t.toSec() + 4.0*M_PI/3.0));
+
+        // Integrate RK4
         attitude_integrator.UpdateStates(dt, torque);
         attitude_integrator.GetStates(&omega_rk4, &q_rk4);
 
@@ -116,6 +124,7 @@ int main(int argc, char** argv){
         // Publish poses
         asteroid_pose.publish(asteroid_odom);
         camera_pose.publish(pose_cam);
+        object_torque.publish(helper::SetVector3(torque[0], torque[1], torque[2]));
 
         t_prev = time_now;
 

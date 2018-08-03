@@ -14,9 +14,19 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
   nav_msgs
   tf
+  geometry_msgs
 )
 
 find_package(Eigen REQUIRED)
+
+ #Create service types
+add_service_files( FILES
+  angvel.srv
+)
+
+generate_messages( DEPENDENCIES
+  geometry_msgs
+)
 
 catkin_package(
   DEPENDS Eigen
@@ -44,5 +54,12 @@ add_executable(publish_asteroid_pose
                src/publish_asteroid_pose.cpp
                src/helper.cpp
                src/rk4.cpp)
+add_dependencies(publish_asteroid_pose publish_asteroid_pose_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
 target_link_libraries(publish_asteroid_pose ${catkin_LIBRARIES})
-add_dependencies(publish_asteroid_pose ${catkin_EXPORTED_TARGETS})
+
+add_executable(publish_cassini_pose
+               src/publish_cassini_pose.cpp
+               src/helper.cpp
+               src/rk4.cpp)
+add_dependencies(publish_cassini_pose publish_cassini_pose_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
+target_link_libraries(publish_cassini_pose ${catkin_LIBRARIES})

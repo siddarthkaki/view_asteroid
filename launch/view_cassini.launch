@@ -1,13 +1,14 @@
 <launch>
 
-  <arg name="pose_topic" default="/view_obj/obj_pose" />
-  <arg name="cam_topic" default="/view_obj/cam_pose" />
+  <arg name="pose_topic"   default="/view_obj/obj_pose" />
+  <arg name="cam_topic"    default="/view_obj/cam_pose" />
+  <arg name="torque_topic" default="/view_obj/obj_torque" />
 
-  <arg name="height" default="720" />
-  <arg name="width" default="1280" />
+  <arg name="height"   default="720" />
+  <arg name="width"    default="1280" />
   <arg name="f_length" default="960" />
-  <arg name="cx" default="$(eval 0.5*arg('width'))" />
-  <arg name="cy" default="$(eval 0.5*arg('height'))" />
+  <arg name="cx"       default="$(eval 0.5*arg('width'))" />
+  <arg name="cy"       default="$(eval 0.5*arg('height'))" />
 
   <node pkg="view_asteroid"
     type="view_asteroid"
@@ -15,20 +16,20 @@
     output="screen">
 
     <!-- Camera parameters -->
-    <param name="height" value="$(arg height)"/>
-    <param name="width" value="$(arg width)"/>
-    <param name="f_length" value="$(arg f_length)"/>
-    <param name="cx" value="$(arg cx)"/>
-    <param name="cy" value="$(arg cy)"/>
+    <param name="height"       value="$(arg height)"/>
+    <param name="width"        value="$(arg width)"/>
+    <param name="f_length"     value="$(arg f_length)"/>
+    <param name="cx"           value="$(arg cx)"/>
+    <param name="cy"           value="$(arg cy)"/>
     <param name="cam_baseline" value="0.2"/>
 
     <!-- 3D file -->
-    <param name="file_3d" value="Finished_Asteroid.stl"/>
+    <param name="file_3d" value="Cassini/Cassini_66.dae"/>
 
     <!-- Model offset and scaling (offset is also scaled) -->
     <!-- Offset is used when center of 3d model is not the center of the object itself -->
-    <rosparam param="offset_object"> [0.0,-35.0, 20.0] </rosparam>
-    <rosparam param="scale_object"> 0.01 </rosparam>
+    <rosparam param="offset_object"> [0.0, 0.0, 0.0] </rosparam>
+    <rosparam param="scale_object"> 0.1 </rosparam>
 
     <!-- Topics to subscribe to object and camera poses -->
     <param name="object_pose_topic" value="$(arg pose_topic)"/>
@@ -37,23 +38,25 @@
   </node>
 
   <node pkg="view_asteroid"
-    type="publish_asteroid_pose"
-    name="publish_asteroid_pose"
+    type="publish_cassini_pose"
+    name="publish_cassini_pose"
     output="screen">
 
     <!-- Topics to subscribe to object and camera poses -->
-    <param name="object_pose_topic" value="$(arg pose_topic)"/>
-    <param name="camera_pose_topic" value="$(arg cam_topic)"/>
+    <param name="object_pose_topic"   value="$(arg pose_topic)"/>
+    <param name="camera_pose_topic"   value="$(arg cam_topic)"/>
+    <param name="object_torque_topic" value="$(arg torque_topic)"/>
 
     <!-- Initial conditions for the asteroid (quaternion is split in scalar part and vector part) -->
-    <rosparam param="initial_ang_vel"> [0.25, 0.1, 0.05] </rosparam>
-    <rosparam param="initial_quat_vector"> [0.0,-0.7071, 0.0] </rosparam>  <!-- quaternion vector part -->
-    <rosparam param="initial_quat_scalar"> 0.7071 </rosparam>              <!-- quaternion scalar part -->
+    <rosparam param="initial_ang_vel"> [0.1, 0.2, 0.05] </rosparam>
+    <rosparam param="initial_quat_vector"> [0.0, 0.0, 0.0] </rosparam>  <!-- quaternion vector part -->
+    <rosparam param="initial_quat_scalar"> 1.0 </rosparam>              <!-- quaternion scalar part -->
 
     <!-- Inertia matrix for object -->
-    <rosparam param="J_mat"> [0.637,   0.0,   0.0,
-                                0.0, 2.122,   0.0,
-                                0.0,   0.0, 2.235] </rosparam>
+    <!-- https://arc.aiaa.org/doi/pdf/10.2514/2.3795 -->
+    <rosparam param="J_mat"> [8810.8, -136.8,  115.3,
+                              -136.8, 7922.7,  192.1,
+                               115.3,  192.1, 4586.2] </rosparam>
 
   </node>
 

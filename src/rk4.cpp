@@ -16,14 +16,16 @@ rk4::rk4(const Eigen::Vector3d &omega0,
 	quat_[3] = quat_vec[2];
 	quat_.normalize();
 	J_ = J;
+	J_inv_ = J.inverse();
 }
 
-void rk4::DifferentialEquation(const Eigen::Vector3d &omega,
+void rk4::DifferentialEquation(const Eigen::Vector3d &torque,
+	                           const Eigen::Vector3d &omega,
                                const Eigen::Vector4d &quat,
 		  				       Eigen::Vector3d *omega_dot,
                                Eigen::Vector4d *quat_dot) {
 
-	*omega_dot = -helper::skew(omega)*J_*omega;
+	*omega_dot = -J_inv_*(helper::skew(omega)*J_*omega + torque);
 
 	Eigen::Matrix4d M;
 	M <<      0.0, -omega[0], -omega[1], -omega[2],
@@ -34,15 +36,15 @@ void rk4::DifferentialEquation(const Eigen::Vector3d &omega,
 	// *quat_dot = quat;
 }
 
-void rk4::UpdateStates(const double &dt) {
+void rk4::UpdateStates(const double &dt, const Eigen::Vector3d &torque) {
 	const double dt_half = dt/2.0;
 	Eigen::Vector3d kw1, kw2, kw3, kw4;
 	Eigen::Vector4d kq1, kq2, kq3, kq4;
 
-	this->DifferentialEquation(omega_,               quat_,               &kw1, &kq1);
-	this->DifferentialEquation(omega_ + dt_half*kw1, quat_ + dt_half*kq1, &kw2, &kq2);
-	this->DifferentialEquation(omega_ + dt_half*kw2, quat_ + dt_half*kq2, &kw3, &kq3);
-	this->DifferentialEquation(omega_ + dt*kw3,      quat_ + dt*kq3,      &kw4, &kq4);
+	this->DifferentialEquation(torque, omega_,               quat_,               &kw1, &kq1);
+	this->DifferentialEquation(torque, omega_ + dt_half*kw1, quat_ + dt_half*kq1, &kw2, &kq2);
+	this->DifferentialEquation(torque, omega_ + dt_half*kw2, quat_ + dt_half*kq2, &kw3, &kq3);
+	this->DifferentialEquation(torque, omega_ + dt*kw3,      quat_ + dt*kq3,      &kw4, &kq4);
 
 	Eigen::Vector3d deltaW = dt*(kw1 + 2.0*kw2 + 2.0*kw3 + kw4)/6.0;
 	Eigen::Vector4d deltaQ = dt*(kq1 + 2.0*kq2 + 2.0*kq3 + kq4)/6.0;
@@ -54,6 +56,11 @@ void rk4::GetStates(Eigen::Vector3d *omega,
                     Eigen::Quaterniond *quat) {
 	*omega = omega_;
 	*quat = Eigen::Quaterniond(quat_[0], quat_[1], quat_[2], quat_[3]);
+}
+
+
+void rk4::SetAngularVelocity(Eigen::Vector3d &omega) {
+	omega_ = omega;
 }
 
 // void rk4::GetState(geometry_msgs::Vector3 *state) {
