@@ -25,7 +25,7 @@ void rk4::DifferentialEquation(const Eigen::Vector3d &torque,
 		  				       Eigen::Vector3d *omega_dot,
                                Eigen::Vector4d *quat_dot) {
 
-	*omega_dot = -J_inv_*(helper::skew(omega)*J_*omega + torque);
+	*omega_dot = J_inv_*(-helper::skew(omega)*J_*omega + torque);
 
 	Eigen::Matrix4d M;
 	M <<      0.0, -omega[0], -omega[1], -omega[2],

@@ -48,7 +48,7 @@
     <param name="object_torque_topic" value="$(arg torque_topic)"/>
 
     <!-- Initial conditions for the asteroid (quaternion is split in scalar part and vector part) -->
-    <rosparam param="initial_ang_vel"> [0.1, 0.2, 0.05] </rosparam>
+    <rosparam param="initial_ang_vel"> [0.0, 0.0, 0.0] </rosparam>
     <rosparam param="initial_quat_vector"> [0.0, 0.0, 0.0] </rosparam>  <!-- quaternion vector part -->
     <rosparam param="initial_quat_scalar"> 1.0 </rosparam>              <!-- quaternion scalar part -->
 

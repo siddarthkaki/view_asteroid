@@ -48,7 +48,7 @@ add_executable(view_asteroid
                src/view_asteroid.cpp
                src/helper.cpp)
 target_link_libraries(view_asteroid ${catkin_LIBRARIES})
-add_dependencies(view_asteroid ${catkin_EXPORTED_TARGETS})
+add_dependencies(view_asteroid ${catkin_EXPORTED_TARGETS} ${${PROJECT_NAME}_EXPORTED_TARGETS})
 
 add_executable(publish_asteroid_pose
                src/publish_asteroid_pose.cpp

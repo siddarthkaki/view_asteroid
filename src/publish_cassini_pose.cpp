@@ -8,7 +8,7 @@
 rk4 attitude_integrator;
 
 bool change_angvel(view_asteroid::angvel::Request &req,
-                              view_asteroid::angvel::Request &res) {
+                   view_asteroid::angvel::Request &res) {
     // std::cout << "service called: " << std::endl;
     ROS_INFO("Angular velocity set to: %f\t%f\t%f", req.vector.x, req.vector.y, req.vector.z);
     Eigen::Vector3d omega(req.vector.x, req.vector.y, req.vector.z);
@@ -97,6 +97,7 @@ int main(int argc, char** argv){
         Eigen::Vector3d torque = A*Eigen::Vector3d(sin(w*t.toSec()),
                                                    sin(w*t.toSec() + 2.0*M_PI/3.0),
                                                    sin(w*t.toSec() + 4.0*M_PI/3.0));
+        // Eigen::Vector3d torque = helper::skew(omega_rk4)*J*omega_rk4 + 0.0001*J*A*Eigen::Vector3d(0.0, 0.0, sin(w*t.toSec()));
 
         // Integrate RK4
         attitude_integrator.UpdateStates(dt, torque);
