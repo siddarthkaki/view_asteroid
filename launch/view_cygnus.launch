@@ -1,0 +1,135 @@
+<launch>
+
+  <arg name="pose_topic" default="/view_obj/obj_pose" />
+  <arg name="cam_topic" default="/view_obj/cam_pose" />
+
+  <arg name="height" default="1080" />
+  <arg name="width" default="1920" />
+  <arg name="f_length" default="960" />
+  <arg name="cx" default="$(eval 0.5*arg('width'))" />
+  <arg name="cy" default="$(eval 0.5*arg('height'))" />
+
+  <node pkg="view_asteroid"
+    type="view_asteroid"
+    name="view_asteroid"
+    output="screen">
+
+    <!-- Camera parameters -->
+    <param name="height" value="$(arg height)"/>
+    <param name="width" value="$(arg width)"/>
+    <param name="f_length" value="$(arg f_length)"/>
+    <param name="cx" value="$(arg cx)"/>
+    <param name="cy" value="$(arg cy)"/>
+    <param name="cam_baseline" value="0.2"/>
+
+    <!-- 3D file -->
+    <param name="file_3d" value="Cygnus/Enhanced_Cygnus.dae"/>
+
+    <!-- Model offset and scaling (offset is also scaled) -->
+    <!-- Offset is used when center of 3d model is not the center of the object itself -->
+    <rosparam param="offset_object"> [0.0,0.0,4.75] </rosparam>
+    <rosparam param="scale_object"> 1.0 </rosparam>
+
+    <!-- Topics to subscribe to object and camera poses -->
+    <param name="object_pose_topic" value="$(arg pose_topic)"/>
+    <param name="camera_pose_topic" value="$(arg cam_topic)"/>
+
+  </node>
+
+  <node pkg="view_asteroid"
+    type="publish_cygnus_pose"
+    name="publish_cygnus_pose"
+    output="screen">
+
+    <!-- Topics to subscribe to object and camera poses -->
+    <param name="object_pose_topic" value="$(arg pose_topic)"/>
+    <param name="camera_pose_topic" value="$(arg cam_topic)"/>
+
+    <!-- Initial conditions for cygnus (quaternion is split in scalar part and vector part) -->
+    <rosparam param="initial_ang_vel"> [0.25, 0.1, 0.05] </rosparam>
+    <rosparam param="initial_quat_vector"> [0.0,-0.7071, 0.0] </rosparam>  <!-- quaternion vector part -->
+    <rosparam param="initial_quat_scalar"> 0.7071 </rosparam>              <!-- quaternion scalar part -->
+
+    <!-- Initial camera position -->
+    <rosparam param="initial_cam_position"> [-20.0, 0.0, 0.0] </rosparam>
+
+
+    <!-- Inertia matrix for object -->
+    <rosparam param="J_mat"> [0.637,   0.0,   0.0,
+                                0.0, 2.122,   0.0,
+                                0.0,   0.0, 2.235] </rosparam>
+
+  </node>
+
+  <group ns="right_cam">
+  <node name="camera_info" pkg="rostopic" type="rostopic"
+      args="pub camera_info sensor_msgs/CameraInfo
+     '{header: {seq: 0, stamp: {secs: 0, nsecs: 0}, frame_id: 'camera/right'},
+      height: $(arg height), width: $(arg width), distortion_model: 'plumb_bob',
+      D: [0],
+      K: [$(arg f_length),             0.0, $(arg cx), 
+          0.0,             $(arg f_length), $(arg cy),
+          0.0,                         0.0,      1.0],
+      R: [1.0, 0.0, 0.0,
+          0.0, 1.0, 0.0,
+          0.0, 0.0, 1.0],
+      P: [$(arg f_length),             0.0, $(arg cx), 0.0,
+          0.0,             $(arg f_length), $(arg cy), 0.0, 
+          0.0,                         0.0,       1.0, 0.0],
+      binning_x: 0, binning_y: 0,
+      roi: {x_offset: 0, 
+            y_offset: 0, 
+            height: $(arg height), 
+            width: $(arg width), 
+            do_rectify: true}}' -r 2"
+      output="screen"/>
+  </group>
+
+  <group ns="left_cam">
+  <node name="camera_info" pkg="rostopic" type="rostopic"
+      args="pub camera_info sensor_msgs/CameraInfo
+     '{header: {seq: 0, stamp: {secs: 0, nsecs: 0}, frame_id: 'camera/left'},
+      height: $(arg height), width: $(arg width), distortion_model: 'plumb_bob',
+      D: [0],
+      K: [$(arg f_length),             0.0, $(arg cx), 
+          0.0,             $(arg f_length), $(arg cy),
+          0.0,                         0.0,      1.0],
+      R: [1.0, 0.0, 0.0,
+          0.0, 1.0, 0.0,
+          0.0, 0.0, 1.0],
+      P: [$(arg f_length),             0.0, $(arg cx), 0.0,
+          0.0,             $(arg f_length), $(arg cy), 0.0, 
+          0.0,                         0.0,       1.0, 0.0],
+      binning_x: 0, binning_y: 0,
+      roi: {x_offset: 0, 
+            y_offset: 0, 
+            height: $(arg height), 
+            width: $(arg width), 
+            do_rectify: true}}' -r 2"
+      output="screen"/>
+  </group>
+
+  <group ns="camera_sync">
+    <node pkg="stereo_image_proc"
+      type="stereo_image_proc"
+      name="stereo_image_proc"
+      output="screen">
+
+      <!-- 3D file -->
+      <!-- <param name="file_3d" value="Finished_Asteroid.stl"/> -->
+
+      <!-- Model offset and scaling (offset is also scaled) -->
+      <!-- Offset is used when center of 3d model is not the center of the object itself -->
+      <!-- <rosparam param="offset_object"> [0.0,-35.0, 20.0]</rosparam> -->
+      <!-- <rosparam param="scale_object"> 0.01</rosparam> -->
+
+      <!-- Topics to subscribe to object and camera poses -->
+      <param name="object_pose_topic" value="$(arg pose_topic)"/>
+      <param name="camera_pose_topic" value="$(arg cam_topic)"/>
+
+    </node>
+  </group>
+
+  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find view_asteroid)/rviz/rviz_config.rviz"/>
+</launch>
+

@@ -12,7 +12,8 @@
 #include "view_asteroid/helper.h"
 #include <thread>
 
-class mutexStruct {
+class mutexStruct
+{
  public:
     pthread_mutex_t m_right_img;
     pthread_mutex_t m_left_img;
@@ -36,7 +37,8 @@ mutexStruct mutexes_;
 ros::Time tf_pub(const Eigen::Vector3d &point,
                  const Eigen::Quaterniond &quat,
                  const std::string parent_frame,
-                 const std::string child_frame){
+                 const std::string child_frame)
+{
   static tf::TransformBroadcaster br;
   // ROS_INFO("Publishing into frame: %s", msg->header.frame_id.c_str());
   tf::Transform transform;
@@ -53,7 +55,8 @@ ros::Time tf_pub(const Eigen::Vector3d &point,
 ros::Time tf_pub(const geometry_msgs::Point &point,
                  const geometry_msgs::Quaternion &quat,
                  const std::string parent_frame,
-                 const std::string child_frame){
+                 const std::string child_frame)
+{
   static tf::TransformBroadcaster br;
   // ROS_INFO("Publishing into frame: %s", msg->header.frame_id.c_str());
   tf::Transform transform;
@@ -75,7 +78,8 @@ void MeshMarker(const Eigen::Vector3d &point,
                 const std::string &file_3d,
                 const double &size,
                 const int &seqNumber,
-                visualization_msgs::MarkerArray *markerArray) {
+                visualization_msgs::MarkerArray *markerArray)
+{
     visualization_msgs::Marker marker;
     marker.type = visualization_msgs::Marker::MESH_RESOURCE;
     marker.mesh_resource = "package://view_asteroid/meshes/" + file_3d;
@@ -109,7 +113,8 @@ void MeshMarker(const Eigen::Vector3d &point,
 }
 
 void poseCallback(const nav_msgs::Odometry::ConstPtr& msg,
-                  visualization_msgs::MarkerArray& asteroid_marker) {
+                  visualization_msgs::MarkerArray& asteroid_marker)
+{
     // Send object pose to tf tree
     ros::Time time_now = tf_pub(msg->pose.pose.position, 
                                 msg->pose.pose.orientation, 
@@ -120,7 +125,8 @@ void poseCallback(const nav_msgs::Odometry::ConstPtr& msg,
 }
 
 void camPoseCallback(const geometry_msgs::Pose::ConstPtr& msg,
-                 const double& cam_baseline) {
+                 const double& cam_baseline)
+{
     // Set camera's tree frame
     // Eigen::Vector3d cam_position(cam_pos[0], cam_pos[1], cam_pos[2]);
     tf_pub(msg->position, msg->orientation, "world", "camera");
@@ -147,7 +153,8 @@ void camCallback(const sensor_msgs::Image::ConstPtr& msg,
                  const double& cy,
                  const double& cam_baseline,
                  const std::string& left_right,
-                 const ros::Publisher& pub_info) {
+                 const ros::Publisher& pub_info)
+{
     std::vector<double> D = {0.0};
     std::vector<double> K = {  f, 0.0,  cx, 
                              0.0,   f,  cy, 
@@ -179,8 +186,10 @@ void camCallback(const sensor_msgs::Image::ConstPtr& msg,
     cam_info.width = width;
     cam_info.distortion_model = "plumb_bob";
     cam_info.D = D;
-    for (uint i = 0; i < 12; i++) {
-        if (i < 9) {
+    for (uint i = 0; i < 12; i++)
+    {
+        if (i < 9)
+        {
             cam_info.K[i] = K[i];
             cam_info.R[i] = R[i];
         }
@@ -204,7 +213,8 @@ void camSyncThread(const double& rate,
                    const double& f,
                    const double& cx,
                    const double& cy,
-                   const double& cam_baseline) {
+                   const double& cam_baseline)
+{
     ros::NodeHandle node("~");
     ros::Rate loop_rate(rate);
     loop_rate.sleep();
@@ -243,8 +253,10 @@ void camSyncThread(const double& rate,
     cam_info.roi.do_rectify = true;
     cam_info_r = cam_info;
     cam_info_l = cam_info;
-    for (uint i = 0; i < 12; i++) {
-        if (i < 9) {
+    for (uint i = 0; i < 12; i++)
+    {
+        if (i < 9)
+        {
             cam_info_r.K[i] = K[i];
             cam_info_r.R[i] = R[i];
             cam_info_l.K[i] = K[i];
@@ -254,7 +266,8 @@ void camSyncThread(const double& rate,
         cam_info_l.P[i] = Pl[i];
     }
 
-    while (ros::ok()) {
+    while (ros::ok())
+    {
         pthread_mutex_lock(&mutexes_.m_right_img);
             img_right = img_right_;
         pthread_mutex_unlock(&mutexes_.m_right_img);
@@ -276,7 +289,8 @@ void camSyncThread(const double& rate,
     // ROS_DEBUG("Exiting Mediation Layer Thread...");
 }
 
-int main(int argc, char** argv){
+int main(int argc, char** argv)
+{
     ros::init(argc, argv, "view_asteroid");
     ros::NodeHandle node("~");
     ROS_INFO("Asteroid view started!");

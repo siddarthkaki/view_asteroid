@@ -63,3 +63,10 @@ add_executable(publish_cassini_pose
                src/rk4.cpp)
 add_dependencies(publish_cassini_pose publish_cassini_pose_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
 target_link_libraries(publish_cassini_pose ${catkin_LIBRARIES})
+
+add_executable(publish_cygnus_pose
+               src/publish_cygnus_pose.cpp
+               src/helper.cpp
+               src/rk4.cpp)
+add_dependencies(publish_cygnus_pose publish_cygnus_pose_generate_messages_cpp ${catkin_EXPORTED_TARGETS})
+target_link_libraries(publish_cygnus_pose ${catkin_LIBRARIES})
