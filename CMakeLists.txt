@@ -10,6 +10,7 @@ add_compile_options(-std=c++11)
 find_package(catkin REQUIRED COMPONENTS
   cmake_modules
   roscpp
+  rospy
   std_msgs
   sensor_msgs
   nav_msgs

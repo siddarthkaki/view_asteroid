@@ -49,10 +49,7 @@
     <rosparam param="initial_ang_vel"> [0.25, 0.1, 0.05] </rosparam>
     <rosparam param="initial_quat_vector"> [0.0,-0.7071, 0.0] </rosparam>  <!-- quaternion vector part -->
     <rosparam param="initial_quat_scalar"> 0.7071 </rosparam>              <!-- quaternion scalar part -->
-
-    <!-- Initial camera position -->
-    <rosparam param="initial_cam_position"> [-20.0, 0.0, 0.0] </rosparam>
-
+    <rosparam param="initial_position"> [20.0, 0.0, 0.0] </rosparam>
 
     <!-- Inertia matrix for object -->
     <rosparam param="J_mat"> [0.637,   0.0,   0.0,

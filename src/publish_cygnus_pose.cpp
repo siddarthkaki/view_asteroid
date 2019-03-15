@@ -28,13 +28,13 @@ int main(int argc, char** argv)
     ros::Rate loop_rate(rate);
 
     // Load initial conditions
-    std::vector<double> initial_ang_vel, initial_quat_vector, initial_cam_position;
+    std::vector<double> initial_ang_vel, initial_quat_vector, initial_position;
     double initial_quat_scalar;
     node.getParam("initial_ang_vel", initial_ang_vel);
     node.getParam("initial_quat_vector", initial_quat_vector);
     node.getParam("initial_quat_scalar", initial_quat_scalar);
 
-    node.getParam("initial_cam_position", initial_cam_position);
+    node.getParam("initial_position", initial_position);
 
     // Load inertia matrix
     std::vector<double> J_mat;
@@ -100,7 +100,7 @@ int main(int argc, char** argv)
         geometry_msgs::Quaternion quat;
         quat.x = q_rk4.x(); quat.y = q_rk4.y();
         quat.z = q_rk4.z(); quat.w = q_rk4.w();
-        asteroid_odom.pose.pose.position = helper::SetPoint(0.0, 0.0, 0.0);
+        asteroid_odom.pose.pose.position = helper::SetPoint(initial_position[0],initial_position[1],initial_position[2]);
         asteroid_odom.pose.pose.orientation = quat;
         asteroid_odom.twist.twist.linear = helper::SetVector3(0.0, 0.0, 0.0);
         asteroid_odom.twist.twist.angular = helper::SetVector3(omega_rk4[0], omega_rk4[1], omega_rk4[2]);
@@ -109,7 +109,7 @@ int main(int argc, char** argv)
         // Camera pose
         geometry_msgs::Quaternion quat_cam;
         //geometry_msgs::Point pos_cam = helper::SetPoint(-10.0, 0.0, 0.0);
-        geometry_msgs::Point pos_cam = helper::SetPoint(initial_cam_position[0],initial_cam_position[1],initial_cam_position[2]);
+        geometry_msgs::Point pos_cam = helper::SetPoint(0.0, 0.0, 0.0);
         geometry_msgs::Pose pose_cam;
         quat_cam.x = 0.0; quat_cam.y = 0.0;
         quat_cam.z = 0.0; quat_cam.w = 1.0;
