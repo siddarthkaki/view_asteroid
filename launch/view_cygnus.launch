@@ -51,6 +51,9 @@
     <rosparam param="initial_quat_scalar"> 0.7071 </rosparam>              <!-- quaternion scalar part -->
     <rosparam param="initial_position"> [20.0, 0.0, 0.0] </rosparam>
 
+    <!-- Translational velocity of object-->
+    <rosparam param="trans_vel"> [0.5, 0.0, 0.0] </rosparam>
+
     <!-- Inertia matrix for object -->
     <rosparam param="J_mat"> [0.637,   0.0,   0.0,
                                 0.0, 2.122,   0.0,

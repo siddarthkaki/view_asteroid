@@ -28,13 +28,14 @@ int main(int argc, char** argv)
     ros::Rate loop_rate(rate);
 
     // Load initial conditions
-    std::vector<double> initial_ang_vel, initial_quat_vector, initial_position;
+    std::vector<double> initial_ang_vel, initial_quat_vector, initial_position, trans_vel;
     double initial_quat_scalar;
     node.getParam("initial_ang_vel", initial_ang_vel);
     node.getParam("initial_quat_vector", initial_quat_vector);
     node.getParam("initial_quat_scalar", initial_quat_scalar);
 
     node.getParam("initial_position", initial_position);
+    node.getParam("trans_vel", trans_vel);
 
     // Load inertia matrix
     std::vector<double> J_mat;
@@ -54,6 +55,8 @@ int main(int argc, char** argv)
     Eigen::Vector3d quat_vec(initial_quat_vector[0], initial_quat_vector[1], initial_quat_vector[2]);
     double quat_scalar = initial_quat_scalar;
 
+    Eigen::Vector3d trans_vel_vec(trans_vel[0], trans_vel[1], trans_vel[2]);
+
     // Initialize rk4 integrator
     // Eigen::Matrix3d J = Eigen::Vector3d(0.637, 2.122, 2.235).asDiagonal();
     Eigen::Matrix3d J;
@@ -71,9 +74,12 @@ int main(int argc, char** argv)
     asteroid_odom.header.frame_id = "world";
     asteroid_odom.child_frame_id = "asteroid";
 
-    // Initialize time
+    // Initialise time
     ros::Time t_prev = ros::Time::now();
     ros::Time time_now;
+
+    // Initialise translational position
+    Eigen::Vector3d position_vec(initial_position[0], initial_position[1], initial_position[2]);
 
     // Start service to change angular velocity of the object
     ros::ServiceServer update_angvel_srv = node.advertiseService("/UpdateAngVelObject", change_angvel);
@@ -82,6 +88,7 @@ int main(int argc, char** argv)
     Eigen::Vector3d torque(0.0, 0.0, 0.0);
 
     // Print initial conditions
+    ROS_INFO("Translational velocity: %f\t%f\t%f", trans_vel_vec[0], trans_vel_vec[1], trans_vel_vec[2]);
     ROS_INFO("Initial angular velocity: %f\t%f\t%f", omega0[0], omega0[1], omega0[2]);
     ROS_INFO("Initial quaternion: qs: %f\tqv: %f\t%f\t%f", quat_scalar, quat_vec[0], quat_vec[1], quat_vec[2]);
     ROS_INFO("Inertia matrix: \n%f\t%f\t%f\n%f\t%f\t%f\n%f\t%f\t%f",
@@ -100,7 +107,9 @@ int main(int argc, char** argv)
         geometry_msgs::Quaternion quat;
         quat.x = q_rk4.x(); quat.y = q_rk4.y();
         quat.z = q_rk4.z(); quat.w = q_rk4.w();
-        asteroid_odom.pose.pose.position = helper::SetPoint(initial_position[0],initial_position[1],initial_position[2]);
+        // asteroid_odom.pose.pose.position = helper::SetPoint(initial_position[0],initial_position[1],initial_position[2]);
+        position_vec = position_vec + trans_vel_vec*dt;
+        asteroid_odom.pose.pose.position = helper::SetPoint(position_vec[0], position_vec[1], position_vec[2]);
         asteroid_odom.pose.pose.orientation = quat;
         asteroid_odom.twist.twist.linear = helper::SetVector3(0.0, 0.0, 0.0);
         asteroid_odom.twist.twist.angular = helper::SetVector3(omega_rk4[0], omega_rk4[1], omega_rk4[2]);
