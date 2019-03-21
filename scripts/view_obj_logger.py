@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 import rospy
 import message_filters
 from std_msgs.msg import String
@@ -24,10 +25,12 @@ bridge = CvBridge()
 #     arg_pose_path = str(sys.argv[2])
 #     arg_img_path = str(sys.argv[3])
 
+data_type = 'train' # train, test, evaluate
+
 # Init csv writer
-pose_path = os.path.expanduser('~/workspace/research/cygnus_data/pose')
+pose_path = os.path.expanduser('~/workspace/research/cygnus_data/' + data_type + '/pose')
 #pose_path = os.path.expanduser(arg_pose_path)
-pose_writer = csv.writer(open(os.path.join(pose_path,'pose_log.csv'), mode='w'), delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
+pose_writer = csv.writer(open(os.path.join(pose_path,'pose_log.csv'), mode='a'), delimiter=',', quotechar='"', quoting=csv.QUOTE_MINIMAL)
 
 # Callback function
 def callback(odometry_msg, image_msg):
@@ -36,6 +39,8 @@ def callback(odometry_msg, image_msg):
 
     secs = odometry_msg.header.stamp.secs
     nsecs = odometry_msg.header.stamp.nsecs
+
+    timestamp = secs + nsecs*1e-9
 
     pos_x = odometry_msg.pose.pose.position.x
     pos_y = odometry_msg.pose.pose.position.y
@@ -47,7 +52,7 @@ def callback(odometry_msg, image_msg):
     quat_w = odometry_msg.pose.pose.orientation.w
 
     # Write pose to csv file
-    pose_writer.writerow([secs, nsecs, pos_x, pos_y, pos_z, quat_x, quat_y, quat_z, quat_w])
+    pose_writer.writerow([timestamp, pos_x, pos_y, pos_z, quat_x, quat_y, quat_z, quat_w])
 
     # Save image to file
     try:
@@ -56,9 +61,9 @@ def callback(odometry_msg, image_msg):
     except CvBridgeError, e:
         print(e)
     else:
-        img_path = os.path.expanduser('~/workspace/research/cygnus_data/images')
+        img_path = os.path.expanduser('~/workspace/research/cygnus_data/' + data_type + '/images')
         #img_path = os.path.expanduser(arg_img_path)
-        img_name = str(secs) + '_' + str(nsecs) + '.jpeg'
+        img_name = str(secs) + '_' + str(nsecs*1e-9)[2:].ljust(10, '0') + '.jpg'
         cv2.imwrite(os.path.join(img_path, img_name), cv2_img)
     
 def logger():
